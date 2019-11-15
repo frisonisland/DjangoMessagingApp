@@ -2,7 +2,8 @@ from django.views.generic.edit import FormView, View
 from rest_test_project.rest_app.forms.GoogleForms import GoogleForm
 from django.http import JsonResponse, HttpResponse
 from datetime import datetime
-
+from .models import ContactAddressBook, UserContact
+from django.core import serializers
 # Create your views here.
 
 
@@ -36,19 +37,23 @@ class UserMessagesView(View):
 class ContactsView(View):
 
     def get(self, request):
-        response = [
-            {'userId': "bot",
-             'name': "Bot",
+        """
+
+        :param request:
+        :return: JSON object of contacts. Contacts is a list of objects
+                with following keys: userId, name, status, info, picture
+        """
+        contact_keys = ["id", "first_name", "status", "info", "picture"]
+        response = {"contacts":[
+            {'id': "bot",
+             'first_name': "Bot",
              'status': True,
              'info': "Blip Blop",
              'picture': 'bot.png'
-             },
-            {'userId': "asdhakdh",
-                   'name': "Marco",
-                   'status': True,
-                   'info': "I'm a magic pro",
-                   'picture': 'avatar.jpg'
-                   }]
+             }]}
+        query1 = ContactAddressBook.objects.filter(address_book__user=request.user)
+        users = UserContact.objects.filter(contactaddressbook__in=query1).values(*contact_keys)
+        response["contacts"] += users
         return JsonResponse(response)
 
     def post(self, request, user_id):

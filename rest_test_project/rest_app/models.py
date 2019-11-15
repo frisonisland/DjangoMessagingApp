@@ -17,6 +17,9 @@ class AddressBook(models.Model):
     name = models.CharField(max_length=100, default="Main")
     user = models.OneToOneField(UserContact, on_delete=models.CASCADE)
 
+    def __str__(self):
+        return 'Address: ' + self.user.first_name + " - " + self.name
+
     class Meta:
         constraints = [models.UniqueConstraint(fields=['name', 'user'], name="unique_address_book")]
 
@@ -27,6 +30,9 @@ class ContactAddressBook(models.Model):
     """
     address_book = models.ForeignKey(AddressBook, on_delete=models.CASCADE)
     contact_user = models.ForeignKey(UserContact, on_delete=models.CASCADE)
+
+    def __str__(self):
+        return self.address_book.__str__() + " -- " + self.contact_user.first_name
 
     class Meta:
         constraints = [models.UniqueConstraint(fields=['address_book', 'contact_user'], name="unique_contact")]
