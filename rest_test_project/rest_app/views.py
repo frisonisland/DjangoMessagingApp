@@ -1,10 +1,32 @@
+import json
+
+from django.utils.decorators import method_decorator
 from django.views.generic.edit import FormView, View
 from rest_test_project.rest_app.forms.GoogleForms import GoogleForm
 from django.http import JsonResponse, HttpResponse
 from datetime import datetime
 from .models import ContactAddressBook, UserContact
+from django.contrib.auth import authenticate, login
+from django.views.decorators.csrf import csrf_exempt
 from django.core import serializers
 # Create your views here.
+
+
+class LoginView(View):
+
+    @method_decorator(csrf_exempt)
+    def dispatch(self, request, *args, **kwargs):
+        return super(LoginView, self).dispatch(request, *args, **kwargs)
+
+    def post(self, request):
+        data = json.loads(request.body)
+        username = data.get("username")
+        password = data.get("password")
+        authenticated = authenticate(username=username, password=password)
+        if authenticated:
+            login(request, authenticated)
+            return JsonResponse({"status": "Authenticated"})
+        return JsonResponse({"status": "Invalid login"})
 
 
 class GoogleSearchView(FormView):
