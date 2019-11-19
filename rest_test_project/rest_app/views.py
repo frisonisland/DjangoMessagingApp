@@ -48,9 +48,9 @@ class GoogleSearchView(FormView):
 class UserMessagesView(View):
 
     def get(self, request, user_id):
-        message = {'body': "Hey, how's it going?",
-                   'date': datetime.now().strftime("%d/%m/%Y %HH:%mm:%ss")}
-        return JsonResponse(message)
+        messages = {"messages":[{'body': "Hey, how's it going?",
+                   'date': datetime.now().strftime("%d/%m/%Y %HH:%mm:%ss")}]}
+        return JsonResponse(messages)
 
     def post(self, request, user_id):
         return HttpResponse(status=200)
