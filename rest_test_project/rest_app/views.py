@@ -71,11 +71,21 @@ class ContactsView(View):
              'first_name': "Bot",
              'status': True,
              'info': "Blip Blop",
-             'picture': 'bot.png'
+             'picture': 'bot.jpg'
              }]}
         query1 = ContactAddressBook.objects.filter(address_book__user=request.user)
         users = UserContact.objects.filter(contactaddressbook__in=query1).values(*contact_keys)
         response["contacts"] += users
+        new_response = []
+        # map to correct keys
+        for entry in response["contacts"]:
+            new_response.append({"userId": entry["id"],
+                                 "name": entry["first_name"],
+                                 "status": entry["status"],
+                                 "info": entry["info"],
+                                 "picture": entry["picture"],
+                                 })
+        response["contacts"] = new_response
         return JsonResponse(response)
 
     def post(self, request, user_id):
