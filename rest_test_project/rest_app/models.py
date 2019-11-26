@@ -40,7 +40,7 @@ class ContactAddressBook(models.Model):
 
 class Chat(models.Model):
     name = models.CharField(max_length=100)
-    recipients = models.ForeignKey(UserContact, on_delete=models.CASCADE)
+    recipients = models.ManyToManyField(UserContact)
 
 
 class Message(models.Model):

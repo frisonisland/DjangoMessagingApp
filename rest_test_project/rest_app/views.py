@@ -5,7 +5,7 @@ from django.views.generic.edit import FormView, View
 from rest_test_project.rest_app.forms.GoogleForms import GoogleForm
 from django.http import JsonResponse, HttpResponse
 from datetime import datetime
-from .models import ContactAddressBook, UserContact, Message
+from .models import ContactAddressBook, UserContact, Message, Chat
 from django.contrib.auth import authenticate, login, logout
 from django.views.decorators.csrf import csrf_exempt
 from django.core import serializers
@@ -81,16 +81,11 @@ class ContactsView(View):
                 with following keys: userId, name, status, info, picture
         """
         contact_keys = ["id", "first_name", "status", "info", "picture"]
-        response = {"contacts":[
-            {'id': "bot",
-             'first_name': "Bot",
-             'status': True,
-             'info': "Blip Blop",
-             'picture': 'bot.jpg'
-             }]}
-        query1 = ContactAddressBook.objects.filter(address_book__user=request.user)
-        users = UserContact.objects.filter(contactaddressbook__in=query1).values(*contact_keys)
-        response["contacts"] += users
+        response = {"contacts":[]}
+        chats = Chat.objects.filter(recipients__in=[request.user])
+        for chat in chats:
+            users = chat.recipients.exclude(pk__in=[request.user.pk]).values(*contact_keys)
+            response["contacts"] += users
         new_response = []
         # map to correct keys
         for entry in response["contacts"]:
