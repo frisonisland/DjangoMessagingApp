@@ -5,7 +5,7 @@ from django.views.generic.edit import FormView, View
 from rest_test_project.rest_app.forms.GoogleForms import GoogleForm
 from django.http import JsonResponse, HttpResponse
 from datetime import datetime
-from .models import ContactAddressBook, UserContact
+from .models import ContactAddressBook, UserContact, Message
 from django.contrib.auth import authenticate, login, logout
 from django.views.decorators.csrf import csrf_exempt
 from django.core import serializers
@@ -45,12 +45,29 @@ class GoogleSearchView(FormView):
 
 class UserMessagesView(View):
 
+    @method_decorator(csrf_exempt)
+    def dispatch(self, request, *args, **kwargs):
+        return super(UserMessagesView, self).dispatch(request, *args, **kwargs)
+
     def get(self, request, user_id):
-        messages = {"messages":[{'body': "Hey, how's it going?",
-                   'date': datetime.now().strftime("%d/%m/%Y %HH:%mm:%ss")}]}
+        contact = UserContact.objects.get(pk=user_id)
+        contactbook = ContactAddressBook.objects.filter(address_book__user=request.user, contact_user=contact)[0]
+        message_keys = ["message","date"]
+        messages = Message.objects.filter(user=request.user, contact=contactbook).values(*message_keys)
+        new_messages = []
+        for msg in messages:
+            new_messages.append({"body":msg["message"], "date": msg["date"]})
+        messages = {"messages": new_messages}
         return JsonResponse(messages)
 
+
     def post(self, request, user_id):
+        data = json.loads(request.body)
+        message = data.get("message")
+        contact = UserContact.objects.get(pk=user_id)
+        contactbook = ContactAddressBook.objects.filter(address_book__user=request.user, contact_user=contact)[0]
+        Message.objects.create(user=request.user, message=message, date=datetime.now(), contact=contactbook)
+
         return HttpResponse(status=200)
 
 
@@ -86,5 +103,3 @@ class ContactsView(View):
         response["contacts"] = new_response
         return JsonResponse(response)
 
-    def post(self, request, user_id):
-        return HttpResponse(status=200)

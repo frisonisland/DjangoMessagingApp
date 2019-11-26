@@ -39,12 +39,18 @@ class ContactAddressBook(models.Model):
 
 
 class Chat(models.Model):
-    """
-    A model that represents a chat. A chat name must be unique for eacher user. Chats can have multiple contacts (group chat).
-    """
     name = models.CharField(max_length=100)
-    user = models.ForeignKey(UserContact, on_delete=models.CASCADE)
-    contacts = models.ForeignKey(ContactAddressBook, on_delete=models.CASCADE)
+    recipients = models.ForeignKey(UserContact, on_delete=models.CASCADE)
 
-    class Meta:
-        constraints = [models.UniqueConstraint(fields=['name', 'user'], name="unique_user_chat_name")]
+
+class Message(models.Model):
+    """
+    A model that represents a message.
+    """
+    chat = models.ForeignKey(Chat, on_delete=models.CASCADE)
+    message = models.TextField(max_length=255)
+    date = models.DateTimeField()
+    sender = models.ForeignKey(UserContact, on_delete=models.CASCADE)
+
+    def __str__(self):
+        return self.message.__str__() + " -- " + self.contact.address_book.name
