@@ -43,30 +43,58 @@ class GoogleSearchView(FormView):
     success_url = ''
 
 
+class ChatView(View):
+
+    def get(self, request):
+        response = {"chats": []}
+        chats = Chat.objects.filter(recipients__in=[request.user])
+        contact_keys = ["id", "first_name", "last_name", "status", "info", "picture"]
+        for chat in chats:
+            recipients = list(chat.recipients.exclude(pk__in=[request.user.pk]).values(*contact_keys))
+            if len(recipients) == 1:
+                response["chats"].append({
+                    "id": chat.pk,
+                    "name": recipients[0]["first_name"],
+                    "status": recipients[0]["status"],
+                    "info": recipients[0]["info"],
+                    "picture": recipients[0]["picture"]
+                })
+            else:
+                response["chats"].append({"id": chat.pk,
+                    "name": chat.name,
+                    "status": "",
+                    "info": "",
+                    "picture": ""})
+
+        return JsonResponse(response)
+
+
 class UserMessagesView(View):
 
     @method_decorator(csrf_exempt)
     def dispatch(self, request, *args, **kwargs):
         return super(UserMessagesView, self).dispatch(request, *args, **kwargs)
 
-    def get(self, request, user_id):
-        contact = UserContact.objects.get(pk=user_id)
-        contactbook = ContactAddressBook.objects.filter(address_book__user=request.user, contact_user=contact)[0]
-        message_keys = ["message","date"]
-        messages = Message.objects.filter(user=request.user, contact=contactbook).values(*message_keys)
+    def get(self, request, chat_id):
+        message_keys=["date","message", "sender__pk"]
+        chat = Chat.objects.get(pk=chat_id, recipients__in=[request.user])
+        messages = Message.objects.filter(chat=chat).values(*message_keys)
         new_messages = []
         for msg in messages:
-            new_messages.append({"body":msg["message"], "date": msg["date"]})
+            if msg["sender__pk"] == request.user.pk:
+                sender = "me"
+            else:
+                sender = msg["sender__pk"]
+            new_messages.append({"body":msg["message"], "date": msg["date"], "sender": sender})
         messages = {"messages": new_messages}
         return JsonResponse(messages)
 
 
-    def post(self, request, user_id):
+    def post(self, request, chat_id):
         data = json.loads(request.body)
         message = data.get("message")
-        contact = UserContact.objects.get(pk=user_id)
-        contactbook = ContactAddressBook.objects.filter(address_book__user=request.user, contact_user=contact)[0]
-        Message.objects.create(user=request.user, message=message, date=datetime.now(), contact=contactbook)
+        chat = Chat.objects.get(pk=chat_id, recipients__in=[request.user])
+        Message.objects.create(chat=chat, sender=request.user, message=message, date=datetime.now())
 
         return HttpResponse(status=200)
 
@@ -75,17 +103,17 @@ class ContactsView(View):
 
     def get(self, request):
         """
-
         :param request:
         :return: JSON object of contacts. Contacts is a list of objects
                 with following keys: userId, name, status, info, picture
         """
         contact_keys = ["id", "first_name", "status", "info", "picture"]
         response = {"contacts":[]}
-        chats = Chat.objects.filter(recipients__in=[request.user])
-        for chat in chats:
-            users = chat.recipients.exclude(pk__in=[request.user.pk]).values(*contact_keys)
-            response["contacts"] += users
+        #get all contacts in user address book
+        contacts = ContactAddressBook.objects.filter(address_book__user=request.user)
+        #get users in addressbook
+        users = UserContact.objects.filter(contactaddressbook__in=contacts).values(*contact_keys)
+        response["contacts"] += users
         new_response = []
         # map to correct keys
         for entry in response["contacts"]:

@@ -53,4 +53,4 @@ class Message(models.Model):
     sender = models.ForeignKey(UserContact, on_delete=models.CASCADE)
 
     def __str__(self):
-        return self.message.__str__() + " -- " + self.contact.address_book.name
+        return self.message.__str__() + " -- " + self.chat.name
