@@ -6,7 +6,7 @@ from rest_test_project.rest_app.forms.GoogleForms import GoogleForm
 from django.http import JsonResponse, HttpResponse
 from datetime import datetime
 from .models import ContactAddressBook, UserContact
-from django.contrib.auth import authenticate, login
+from django.contrib.auth import authenticate, login, logout
 from django.views.decorators.csrf import csrf_exempt
 from django.core import serializers
 # Create your views here.
@@ -25,8 +25,15 @@ class LoginView(View):
         authenticated = authenticate(username=username, password=password)
         if authenticated:
             login(request, authenticated)
-            return JsonResponse({"status": "Authenticated"})
-        return JsonResponse({"status": "Invalid login"})
+            return JsonResponse({"token": "Authenticated"})
+        return JsonResponse({"token": ""}, status=500)
+
+
+class LogoutView(View):
+
+    def post(self, request):
+        logout(request)
+        return JsonResponse({"status": "Logged out"})
 
 
 class GoogleSearchView(FormView):
@@ -34,15 +41,6 @@ class GoogleSearchView(FormView):
     template_name = 'google_search_template_form.html'
     form_class = GoogleForm
     success_url = ''
-
-    '''def get(self, request):
-        return HttpResponse("Hello!")
-
-    def post(self, request):
-        query = request.POST.get("question")
-        search_result_list = list(search(query, tld="co.in", num=10, stop=3, pause=1))
-        return JsonResponse(search_result_list, safe=False)
-    '''
 
 
 class UserMessagesView(View):
