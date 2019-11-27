@@ -45,6 +45,10 @@ class GoogleSearchView(FormView):
 
 class ChatView(View):
 
+    @method_decorator(csrf_exempt)
+    def dispatch(self, request, *args, **kwargs):
+        return super(ChatView, self).dispatch(request, *args, **kwargs)
+
     def get(self, request):
         response = {"chats": []}
         chats = Chat.objects.filter(recipients__in=[request.user])
@@ -67,6 +71,16 @@ class ChatView(View):
                     "picture": ""})
 
         return JsonResponse(response)
+
+    def post(self, request):
+        data = json.loads(request.body)
+        userId = data.get("userId")
+        contact = UserContact.objects.get(pk=userId)
+        chat = Chat.objects.create(name=contact.first_name)
+        chat.recipients.add(request.user)
+        chat.recipients.add(contact)
+        chat.save()
+        return HttpResponse(status=200)
 
 
 class UserMessagesView(View):
